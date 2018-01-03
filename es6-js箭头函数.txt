@@ -1,0 +1,118 @@
+箭头函数
+
+定义一个箭头函数很简单，基本语法是： 
+JS
+
+([param] [, param]) => {
+   statements
+}
+
+param => expression
+param 是参数，根据参数个数不同，分这几种情况：
+() => { ... } // 零个参数用 () 表示；
+x => { ... } // 一个参数可以省略 ()；
+(x, y) => { ... } // 多参数不能省略 ()；
+当然，和普通函数一样，箭头函数也可以使用 ES6 新增的「默认参数」和「剩余参数」（ Firefox15+ 开始支持）：
+JS
+var func1 = (x = 1, y = 2) => x + y;
+func1(); // 得到 3
+
+var func2 = (x, ...args) => { console.log(args) };
+func2(1,2,3); // 输出 [2, 3]
+
+
+箭头函数允许多行语句或者单行表达式作为函数体。多行语句要用 {} 括起来；单行表达式不需要 {}，并且会作为函数返回值： 
+JS
+
+x => { return x * x }; // 函数返回 x * x
+x => x * x; // 同上一行
+x => return x * x; // SyntaxError 报错，不能省略 {}
+x => { x * x }; // 合法，没有定义返回值，返回 undefined
+箭头函数也是 JS 函数的一种，所以之前的 instanceof 和 typeof 依然可用：
+JS
+var func1 = () => {};
+func1 instanceof Function; // true
+
+var func2 = () => {};
+typeof func2; // "function"
+
+
+特性 
+Nicholas C. Zakas 的博客中指出了箭头函数的几个特性：不能被 new 、this 被绑定为函数定义时的 this 且无法改变、不支持 arguments 。对于最后一点，我在 Firefox24 测试发现，arguments 可以正常工作。不知道是标准有变化，还是 Firefox 的实现有偏差，我们来看前两个特性。 
+箭头函数内部没有 constructor 方法，也没有 prototype，所以不支持 new 操作。new (() => {}) 会触发 TypeError 报错。 
+JS 里的 this 指针一直是新手很头疼的事情，看一个简单的例子： 
+JS
+
+var o = {
+    x : 1,
+    func : function() { console.log(this.x) },
+    test : function() {
+        setTimeout(function() {
+            this.func();
+        }, 100);
+    }
+};
+
+o.test(); // TypeError : this.func is not a function
+
+
+上面代码得不到预期结果，因为 this 发生了改变，这个问题可以这样修正： 
+JS
+
+var o = {
+    x : 1,
+    func : function() { console.log(this.x) },
+    test : function() {
+        var _this = this;
+        setTimeout(function() {
+            _this.func(); 
+        }, 100);
+    }
+};
+
+o.test();
+
+
+
+在函数内部使用外部事先保存的 this 就没问题了。也可以改用 ES5 引入的 bind 方法： 
+JS
+
+var o = {
+    x : 1,
+    func : function() { console.log(this.x) },
+    test : function() {
+        setTimeout(function() {
+            this.func(); 
+        }.bind(this), 100);
+    }
+};
+
+o.test();
+
+
+
+而有了箭头函数，像下面这样写就可以了： 
+JS
+
+var o = {
+    x : 1,
+    func : function() { console.log(this.x) },
+    test : function() {
+        setTimeout(() => { this.func() }, 100);
+    }
+};
+
+o.test();
+
+
+箭头函数的 this 始终指向函数定义时的 this，而非执行时。下面看一个尝试改变箭头函数 this 指针的例子： 
+JS
+
+var x = 1,
+    o = {
+        x : 10,
+        test : () => this.x
+    };
+
+o.test(); // 1
+o.test.call(o); // 依然是1
